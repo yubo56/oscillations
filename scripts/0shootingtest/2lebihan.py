@@ -17,8 +17,11 @@ from scipy.integrate import solve_ivp
 from scipy.interpolate import interp1d
 import scipy.optimize as opt
 
-XMID = 0.03
-EPS = 1e-2
+XMID = 0.05
+EPS = 1e-3
+MSUN = 2e33
+RSUN = 7e10
+MHZ = 1e6
 
 def dydx(x, y, wsq, l, Vg_x, U_x, c1_x, As_x):
     y1, y2, y3, y4 = y
@@ -74,13 +77,24 @@ def wrons(wsq, l, Vg_x, U_x, c1_x, As_x, xmid=XMID, eps=EPS, atol=1e-9,
     retc2 = solve_ivp(dydx, (eps, xmid), yc2_0, args=args, **kwargs)
     rets1 = solve_ivp(dydx, (1, xmid), ys1_0, args=args, **kwargs)
     rets2 = solve_ivp(dydx, (1, xmid), ys2_0, args=args, **kwargs)
+    # fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(
+    #     2, 2,
+    #     figsize=(8, 8),
+    #     gridspec_kw={'height_ratios': [1, 1]})
+    # ax1.plot(retc1.t, retc1.y[0])
+    # ax2.plot(retc2.t, retc2.y[0])
+    # ax3.plot(rets1.t, rets1.y[0])
+    # ax4.plot(rets2.t, rets2.y[0])
+    # plt.savefig('/tmp/foo')
+    # plt.close()
+
     wronskian = np.array([
         retc1.y[ :,-1],
         retc2.y[ :,-1],
         rets1.y[ :,-1],
         rets2.y[ :,-1]])
     det = np.linalg.det(wronskian)
-    print(wsq, det)
+    print('%.7f' % wsq, det)
     return det
 
 def get_y(wsq, l, Vg_x, U_x, c1_x, As_x, xmid=XMID, eps=EPS, **kwargs):
@@ -179,8 +193,8 @@ def sweep_test():
     print('%d sign changes detected' % len(cands))
     for y0, ax in zip(cands, [ax1, ax2, ax3, ax4, ax5, ax6]):
         print(y0)
-        opt_func = lambda wsq: wrons(wsq, **struct_args, **solve_args)
-        wsq_crit = opt.brenth(opt_func, y0 - 0.1, y0 + 0.1, rtol=1e-12)
+        opt_wsq = lambda wsq: wrons(wsq, **struct_args, **solve_args)
+        wsq_crit = opt.brenth(opt_wsq, y0 - 0.1, y0 + 0.1, rtol=1e-12)
         x_crit, y_crit = get_y(wsq_crit, **struct_args, **solve_args)
         ax.loglog(x_crit, y_crit[0], c='g')
         ax.loglog(x_crit, -y_crit[0], c='g', ls='--')
@@ -191,8 +205,8 @@ def sweep_test():
     plt.close()
 
 G = 6.67e-8
-def build_polytrope(n=3, eps=EPS, M=2e33, R=7e10, method='DOP853',
-                    atol=1e-9, rtol=1e-9, **args):
+def build_polytrope(n=3, eps=EPS, M=MSUN, R=RSUN, method='DOP853',
+                    atol=1e-9, rtol=1e-9, plot=False, **args):
     '''
     follow https://www.astro.princeton.edu/~gk/A403/polytrop.pdf Eq 6
 
@@ -202,7 +216,7 @@ def build_polytrope(n=3, eps=EPS, M=2e33, R=7e10, method='DOP853',
     if n >= 5:
         raise ValueError('Unbound star with n = %d' % n)
 
-    y0 = [1, 0]
+    y0 = [1, -eps / 3]
     def dqdx(x, y, n):
         q, qp = y
         return [
@@ -240,15 +254,14 @@ def build_polytrope(n=3, eps=EPS, M=2e33, R=7e10, method='DOP853',
 
     r = alpha * x
     rho = rho_c * q**n
-    dr_left = np.concatenate(([0], r[1: ] - r[ :-1]))
-    dr_right = np.concatenate((r[1: ] - r[ :-1], [0]))
-    dm_left = rho * 4 * np.pi * r**2 * dr_left
-    dm_right = rho * 4 * np.pi * r**2 * dr_right
-    dm = (dm_left + dm_right) / 2 # trapezoidal rule effectively
+    m_r = (
+        4 * np.pi * ((K * (n + 1)) / (G * 4 * np.pi))**(3/2)
+        * rho_c**((3 - n) / (2 * n))
+        * (-x**2 * qp))
+    m_r[1] = m_r[0] # to avoid singularity
 
     c_sq = (1 + 1 / n) * K * rho**(1 / n) # = Gamma * P / rho
-    c_sq[-1] = c_sq[-2]
-    m_r = np.cumsum(dm)
+    c_sq[-1] = c_sq[-2] # to avoid singularity
     g = G * m_r / r**2
     Vg = g * r / c_sq
     U = 4 * np.pi * rho * r**3 / m_r
@@ -256,47 +269,67 @@ def build_polytrope(n=3, eps=EPS, M=2e33, R=7e10, method='DOP853',
     As = np.zeros_like(r)
     rnorm = r / R
 
-    # fig, ((ax1, ax2), (ax3, ax4)) = plt.subplots(
-    #     2, 2,
-    #     figsize=(8, 8),
-    #     sharex=True)
-    # ax1.plot(rnorm, Vg, 'bo')
-    # ax1.set_ylabel('Vg')
-    # ax2.plot(rnorm, U * rnorm, 'bo')
-    # ax2.set_ylabel('U * r')
-    # ax3.plot(rnorm, c1 * rnorm**2, 'bo')
-    # ax3.set_ylabel('c1 * r^2')
-    # ax4.plot(rnorm, rho / rho_c, 'bo')
-    # ax4.set_ylabel('rho / rho_c')
-    # plt.tight_layout()
-    # plt.savefig('/tmp/foo')
-    # plt.close()
+    if plot == True:
+        kwargs = dict(c='k', marker='o', markersize=1, lw=0.5, ls='')
 
-    return rnorm, Vg, U, c1, As
+        fig, ((ax1, ax2, ax3), (ax4, ax5, ax6), (ax7, ax8, ax9)) = plt.subplots(
+            3, 3,
+            figsize=(12, 12),
+            sharex=True)
+        ax1.plot(rnorm, q, **kwargs)
+        ax1.set_ylabel(r'$\theta$')
+        dqdr = np.diff(q) / np.diff(rnorm)
+        ax2.plot((rnorm[1: ] + rnorm[ :-1]) / 2, -dqdr, **kwargs)
+        ax2.set_ylabel(r'$-d\theta/dr$')
+        ax3.plot(rnorm[ :-1], rho[ :-1] / rho_c, **kwargs)
+        ax3.set_ylabel(r'$\rho / \rho_c$')
+        ax4.plot(rnorm, m_r, **kwargs)
+        ax4.set_ylabel(r'$M_r$')
+        ax5.plot(rnorm, g, **kwargs)
+        ax5.set_ylabel(r'$g$')
+        ax6.plot(rnorm, c_sq, **kwargs)
+        ax6.set_ylabel(r'$c^2$')
 
-def wrons_nokw(wsq, l, Vg_x, U_x, c1_x, As_x, atol, rtol, method):
-    return wrons(wsq, l, Vg_x, U_x, c1_x, As_x,
-                 atol=atol, rtol=rtol, method=method)
-def opt_func(y0, l, Vg_x, U_x, c1_x, As_x):
-    my_opt = lambda wsq: wrons_nokw(wsq, l, Vg_x, U_x, c1_x, As_x,
-                                      1e-9, 1e-9, 'DOP853')
-    return opt.brenth(my_opt, y0 - 0.1, y0 + 0.1)
-def sweep_polytrope(n=3):
-    x, Vg, U, c1, As = build_polytrope(n)
-    l = 1
+        ax7.plot(rnorm, Vg, **kwargs)
+        ax7.set_ylabel('$V_g$')
+        ax8.plot(rnorm, U, **kwargs)
+        ax8.set_ylabel('$U r$')
+        ax9.plot(rnorm, c1 * rnorm**2, **kwargs)
+        ax9.set_ylabel('$c_1r^2$')
+        # ax1.set_xlim(-eps, 10 * eps)
+        ax1.set_xlim(0, 1)
+
+        plt.tight_layout()
+        plt.savefig('/tmp/foo')
+        plt.close()
+
     Vg_x = interp1d(x, Vg)
     U_x = interp1d(x, U)
     c1_x = interp1d(x, c1)
     As_x = interp1d(x, As)
+    return rnorm, Vg_x, U_x, c1_x, As_x
+
+def wrons_nokw(wsq, l, Vg_x, U_x, c1_x, As_x, atol, rtol, method):
+    return wrons(wsq, l, Vg_x, U_x, c1_x, As_x,
+                 atol=atol, rtol=rtol, method=method)
+def opt_func(y0, l, Vg_x, U_x, c1_x, As_x, dy=0.1, atol=1e-9, rtol=1e-9,
+             method='DOP853'):
+    my_opt = lambda wsq: wrons_nokw(wsq, l, Vg_x, U_x, c1_x, As_x,
+                                      atol, rtol, method)
+    return opt.brenth(my_opt, y0 - dy, y0 + dy, xtol=rtol)
+def sweep_polytrope(n=3, wsq_arr=np.linspace(2, 20, 201), nthreads=16,
+                    atol=1e-9, rtol=1e-9, method='DOP853'):
+    x, Vg_x, U_x, c1_x, As_x = build_polytrope(n)
+    l = 1
+    dwsq = np.mean(np.diff(wsq_arr))
 
     # plot W(wsq)
-    wsq_arr = np.linspace(2, 20, 201)
     pkl_fn = '2polytrope.pkl'
     if not os.path.exists(pkl_fn):
         print('Running %s' % pkl_fn)
-        with Pool(16) as p:
+        with Pool(nthreads) as p:
             args = [
-                (wsq, l, Vg_x, U_x, c1_x, As_x, 1e-9, 1e-9, 'DOP853')
+                (wsq, l, Vg_x, U_x, c1_x, As_x, atol, rtol, method)
                 for wsq in wsq_arr
             ]
             w_arr = p.starmap(wrons_nokw, args)
@@ -308,15 +341,15 @@ def sweep_polytrope(n=3):
 
         x_crit_lst = []
         y_crit_lst = []
-        with Pool(16) as p:
+        with Pool(nthreads) as p:
             args = [
-                (y0, l, Vg_x, U_x, c1_x, As_x)
+                (y0, l, Vg_x, U_x, c1_x, As_x, dwsq, atol, rtol, method)
                 for y0 in cands
             ]
             wsq_crits = p.starmap(opt_func, args)
         for wsq_crit in wsq_crits:
             x_crit, y_crit = get_y(wsq_crit, l, Vg_x, U_x, c1_x, As_x,
-                                   rtol=1e-9, atol=1e-9, method='DOP853')
+                                   rtol=rtol, atol=atol, method=method)
             x_crit_lst.append(x_crit)
             y_crit_lst.append(y_crit)
         with lzma.open(pkl_fn, 'wb') as f:
@@ -341,7 +374,7 @@ def sweep_polytrope(n=3):
         figsize=(10, 10),
         sharex=True)
     nu_mhzs = np.sqrt(
-        G * 2e33 / (4 * np.pi**2 * 7e10**3) * wsq_crits) * 1e6
+        G * MSUN / (4 * np.pi**2 * RSUN**3) * wsq_crits) * MHZ
     for ax, nu_mhz, x_crit, y_crit in zip(
             [ax1, ax2, ax3, ax4, ax5, ax6], nu_mhzs, x_crit_lst, y_crit_lst):
         ax.loglog(x_crit, y_crit[0], c='g')
@@ -356,5 +389,14 @@ def sweep_polytrope(n=3):
 if __name__ == '__main__':
     # sweep_test()
 
-    # ret = build_polytrope()
-    sweep_polytrope()
+    # build_polytrope(plot=True)
+
+    x, Vg_x, U_x, c1_x, As_x = build_polytrope(3)
+    # wrons(1.5, 1, Vg_x, U_x, c1_x, As_x)
+    # acc = opt_func(5.54, 1, Vg_x, U_x, c1_x, As_x, dy=0.1, method='RK45',
+    #                atol=1e-7, rtol=1e-7)
+    # print(acc)
+    # print(np.sqrt(G * MSUN / (4 * np.pi**2 * RSUN**3) * acc) * MHZ)
+
+    sweep_polytrope(wsq_arr=np.linspace(4, 6, 8), nthreads=8, atol=1e-7,
+                    rtol=1e-7)

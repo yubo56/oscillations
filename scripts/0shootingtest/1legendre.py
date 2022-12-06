@@ -51,14 +51,14 @@ if __name__ == '__main__':
     args = dict(atol=1e-9, rtol=1e-9)
 
     # plot W(l)
-    # l_arr = np.linspace(0.5, 2.5, 21)
-    # w_arr = [wrons(l, args) for l in l_arr]
-    # plt.plot(l_arr, w_arr)
-    # plt.xlabel('l')
-    # plt.ylabel('det W')
-    # plt.tight_layout()
-    # plt.savefig('1legendre', dpi=200)
-    # plt.close()
+    l_arr = np.linspace(0.5, 2.5, 21)
+    w_arr = [wrons(l, args) for l in l_arr]
+    plt.plot(l_arr, w_arr)
+    plt.xlabel('l')
+    plt.ylabel('det W')
+    plt.tight_layout()
+    plt.savefig('1legendre', dpi=200)
+    plt.close()
 
     # plot an eigen
     for y0 in range(2, 7):
