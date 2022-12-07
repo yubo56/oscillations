@@ -19,8 +19,8 @@ import scipy.optimize as opt
 
 XMID = 0.05
 EPS = 1e-3
-MSUN = 2e33
-RSUN = 7e10
+MSUN = 1.989e33
+RSUN = 6.9599e10
 MHZ = 1e6
 
 def dydx(x, y, wsq, l, Vg_x, U_x, c1_x, As_x):
@@ -316,7 +316,11 @@ def opt_func(y0, l, Vg_x, U_x, c1_x, As_x, dy=0.1, atol=1e-9, rtol=1e-9,
              method='DOP853'):
     my_opt = lambda wsq: wrons_nokw(wsq, l, Vg_x, U_x, c1_x, As_x,
                                       atol, rtol, method)
-    return opt.brenth(my_opt, y0 - dy, y0 + dy, xtol=rtol)
+    try:
+        return opt.brenth(my_opt, y0 - dy, y0 + dy, xtol=rtol)
+    except ValueError:
+        print('ERROR: f(a) f(b) have opposite signs', y0-dy, y0, y0+dy)
+        raise
 def sweep_polytrope(n=3, wsq_arr=np.linspace(2, 20, 201), nthreads=16,
                     atol=1e-9, rtol=1e-9, method='DOP853'):
     x, Vg_x, U_x, c1_x, As_x = build_polytrope(n)
@@ -336,15 +340,16 @@ def sweep_polytrope(n=3, wsq_arr=np.linspace(2, 20, 201), nthreads=16,
         w_arr = np.array(w_arr)
 
         sign_changes = np.where(w_arr[1: ] / w_arr[ :-1] < 0)[0]
-        cands = wsq_arr[sign_changes]
-        print('%d sign changes detected' % len(cands))
+        cands_left = wsq_arr[sign_changes]
+        cands_right = wsq_arr[sign_changes + 1]
+        print('%d sign changes detected' % len(cands_left))
 
         x_crit_lst = []
         y_crit_lst = []
         with Pool(nthreads) as p:
             args = [
-                (y0, l, Vg_x, U_x, c1_x, As_x, dwsq, atol, rtol, method)
-                for y0 in cands
+                ((yl + yr) / 2, l, Vg_x, U_x, c1_x, As_x, (yr - yl) / 2, atol, rtol, method)
+                for yl, yr in zip(cands_left, cands_right)
             ]
             wsq_crits = p.starmap(opt_func, args)
         for wsq_crit in wsq_crits:
@@ -353,15 +358,15 @@ def sweep_polytrope(n=3, wsq_arr=np.linspace(2, 20, 201), nthreads=16,
             x_crit_lst.append(x_crit)
             y_crit_lst.append(y_crit)
         with lzma.open(pkl_fn, 'wb') as f:
-            pickle.dump((w_arr, cands, wsq_crits, x_crit_lst, y_crit_lst), f)
+            pickle.dump((w_arr, cands_left, cands_right, wsq_crits, x_crit_lst, y_crit_lst), f)
     else:
         with lzma.open(pkl_fn, 'rb') as f:
             print('Loading %s' % pkl_fn)
-            (w_arr, cands, wsq_crits, x_crit_lst, y_crit_lst) = pickle.load(f)
+            (w_arr, cands_left, cands_right, wsq_crits, x_crit_lst, y_crit_lst) = pickle.load(f)
 
     wsq_crits = np.array(wsq_crits)
-    plt.plot(wsq_arr, w_arr)
-    plt.yscale('symlog', linthresh=1e4)
+    plt.semilogy(wsq_arr, w_arr, 'k')
+    plt.semilogy(wsq_arr, -w_arr, 'k--')
     plt.xlabel('wsq')
     plt.ylabel('det W')
     plt.tight_layout()
@@ -391,12 +396,21 @@ if __name__ == '__main__':
 
     # build_polytrope(plot=True)
 
-    x, Vg_x, U_x, c1_x, As_x = build_polytrope(3)
+    # x, Vg_x, U_x, c1_x, As_x = build_polytrope(3)
     # wrons(1.5, 1, Vg_x, U_x, c1_x, As_x)
+
+    # x, Vg_x, U_x, c1_x, As_x = build_polytrope(3)
     # acc = opt_func(5.54, 1, Vg_x, U_x, c1_x, As_x, dy=0.1, method='RK45',
     #                atol=1e-7, rtol=1e-7)
     # print(acc)
     # print(np.sqrt(G * MSUN / (4 * np.pi**2 * RSUN**3) * acc) * MHZ)
+    # x, y = get_y(acc, 1, Vg_x, U_x, c1_x, As_x, dy=0.1, method='RK45', atol=1e-7, rtol=1e-7)
+    # plt.loglog(x, y[0], 'k')
+    # plt.loglog(x, -y[0], 'k--')
+    # plt.axvline(XMID, c='b')
+    # plt.tight_layout()
+    # plt.savefig('/tmp/foo')
+    # plt.close()
 
-    sweep_polytrope(wsq_arr=np.linspace(4, 6, 8), nthreads=8, atol=1e-7,
-                    rtol=1e-7)
+    sweep_polytrope(wsq_arr=np.linspace(2, 8, 101), nthreads=4, atol=1e-8,
+                    rtol=1e-8)
