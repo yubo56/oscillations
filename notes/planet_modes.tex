@@ -1,5 +1,7 @@
     \documentclass[11pt,
         usenames, % allows access to some tikz colors
+        twocolumn,
+        landscape,
         dvipsnames % more colors: https://en.wikibooks.org/wiki/LaTeX/Colors
     ]{article}
     \usepackage{
@@ -23,7 +25,7 @@
         xcolor, % colored text
         cancel % can cancel things out!
     }
-    \usepackage[margin=1in]{geometry} % page geometry
+    \usepackage[margin=0.5in]{geometry} % page geometry
     \usepackage[
         labelfont=bf, % caption names are labeled in bold
         font=scriptsize % smaller font for captions
@@ -102,6 +104,475 @@ Update: we are able to get seemingly correct oscillation modes with dummy
 stellar profiles, but we don't have the correct non-singular solution near the
 core. Due to this, the matrix determinants in the core-surface solution matching
 are large, and so we suffer from some loss of numerical precision.
+
+\section{12/07/22}
+
+\subsection{Polytrope Solution}
+
+Let's review how to obtain the structure of a polytrope. The equations of
+hydrostatic equilibrum are:
+\begin{align}
+    \rd{P}{r} &= -\frac{GM_r}{r^2}\rho,\\
+    \rd{M_r}{r} &= 4\pi r^2\rho,\\
+    P &= K\rho^\Gamma = K\rho^{1 + 1/n}.
+\end{align}
+Here, $K$ is constant. This can easily be rearranged to obtain
+\begin{equation}
+    \rd{}{r}\p{\frac{r^2}{\rho}\rd{P}{r}} = \rd{}{r}\p{-GM_r} = -G4\pi r^2\rho.
+\end{equation}
+Then, since $\pdil{P}{r} = K\rho^{\Gamma - 1}\Gamma \rdil{p}{r}$, we have that
+\begin{equation}
+    \frac{1}{r^2}\rd{}{r}\p{r^2 K\rho^{\Gamma - 2}\Gamma \rd{\rho}{r}}
+        = -G 4\pi \rho.
+\end{equation}
+Now, let's guess that $\rho(r) = \rho_c \theta^p(r)$, where $p$ must be
+chosen such that $\rho^{\Gamma - 2}\rdil{\rho}{r} \propto \rdil{\theta}{r}$.
+This can be seen to yield that $p = 1 / (\Gamma - 1) = n$, so then
+\begin{align}
+    \frac{1}{r^2}\rd{}{r}\p{\Gamma r^2Kn\rho_c^{\Gamma - 1}\rd{\theta}{r}}
+        &= -G 4\pi \rho_c \theta^n,\\
+    \frac{1}{r^2}\rd{}{r}\p{r^2\rd{\theta}{r}}
+        &= -\theta^n \times \p{\frac{G4\pi \rho_c^{1 - 1/n}}{K\p{n + 1}}}
+        \equiv -\theta^n \frac{1}{\alpha^2}.
+\end{align}
+Let's define $\xi \equiv r/\alpha$, then the Lane Emden-Equation reduces to (let
+primes denote $\rdil{}{\xi}$)
+\begin{equation}
+    \theta'' + \frac{2\theta'}{\xi} +\theta^n = 0.
+\end{equation}
+Note that the ICs for $\theta$ are
+\begin{align}
+    \theta(0) &= 1, & \theta'(0) &= 0.
+\end{align}
+It's clear that $\theta'(0) = 0$ is required for the equation to be non-singular.
+Let's guess that $\theta'(\xi \ll 1) \propto \xi$, then upon inspection we find
+that
+\begin{equation}
+    \theta'(\xi \ll 1) = -\xi / 3
+\end{equation}
+is correct, which is useful later. In addition, $\theta(\xi_1) = 0$ exists if $n
+< 5$, so $\xi_1$ is the outer boundary.
+
+From here, we seek to solve for all of the quantities in closed form; first the
+stellar properties, then the relevant dimensionless quantities for the
+oscillation equations. First, it is clear that our natural parameterization of
+the stellar structure above relies on $K$ and $\rho_c$, while we want to express
+these in terms of $M$ and $R$.
+\begin{align}
+    \alpha &= \p{\frac{K\p{n + 1}}{4\pi G \rho_c^{1 - 1/n}}}^{1/2},\\
+    C &\equiv \p{\frac{K\p{n + 1}}{4\pi G}}^{1/2}
+        = \alpha \rho^{\frac{n - 1}{2n}},\\
+    R &= \alpha \xi_1\nonumber\\
+        &\equiv C^{1/2}\rho_c^{\frac{1 - n}{2n}} \xi_1,\\
+    M &= \int\limits^R 4\pi r^2 \rho(r)\;\mathrm{d}r\nonumber\\
+        &= 4\pi \rho_c \alpha^3 \int\limits^{\xi_1} \xi^2
+            \theta^n(\xi)\;\mathrm{d}\xi\nonumber\\
+        &= 4\pi \rho_c \alpha^3 \int\limits^{\xi_1}
+            -\rd{}{\xi}\p{\xi^2\rd{\theta}{\xi}}\;\mathrm{d}\xi\nonumber\\
+        &= 4\pi \rho_c^{\frac{3 - n}{2n}} C^{3/2}
+            \s{-\p{\xi^2\rd{\theta}{\xi}}}_{\xi_1},\\
+    M &= 4\pi \rho_c^{\frac{3 - n}{2n}}
+            \p{\frac{R}{\rho_c^{(1 - n) / (2n)}\xi_1}}^3
+            \s{-\p{\xi^2\rd{\theta}{\xi}}}_{\xi_1}\nonumber\\
+        &= 4\pi \rho_c \p{\frac{R}{\xi_1}}^3
+            \s{-\p{\xi^2\rd{\theta}{\xi}}}_{\xi_1}\nonumber\\
+    \rho_c &= \p{\frac{M}{4\pi R^3/3}}
+        \p{-\frac{\xi_1}{3\theta'(\xi_1)}},\\
+    R &= \p{\frac{K\p{n + 1}}{4\pi G}}^{1/2}
+            \rho_c^{\frac{1 - n}{2n}}\xi_1\nonumber\\
+    K &= \frac{R^2}{\xi_1^2}\rho_c^{\frac{n - 1}{n}}\frac{4\pi G}{n + 1}.
+\end{align}
+As such, we have $\p{K, \rho_c}\leftrightarrow \p{M, R}$, so we use $K, \rho_c$
+for simplicity. The rest follow:
+\begin{align}
+    \rho(\xi) &= \rho_c \theta^n(\xi),\\
+    P(\xi) &= K\rho_c^\Gamma \theta^{n + 1}(\xi) \propto \theta^{n + 1}(\xi),\\
+    M_r(\xi) &= \int\limits^{\xi \alpha} 4\pi r^2\rho\;\mathrm{d}r\nonumber\\
+        &= 4\pi \alpha^3 \rho_c
+            \int\limits^{\xi} \xi^2\theta^n(\xi)\;\mathrm{d}\xi\nonumber\\
+        &= -4\pi \alpha^3 \rho_c \xi^2\theta'(\xi),\\
+    g(\xi) &= \frac{GM_r}{(\xi\alpha)^2}\nonumber\\
+        &= -4\pi G \alpha \rho_c \theta'(\xi),\\
+    U(\xi) &= \frac{4\pi \rho (\xi\alpha)^3}{M_r}\nonumber\\
+        &= -\frac{\theta^n \xi}{\theta'(\xi)}\\
+    c_1 &= \textcolor{red}{\frac{r / R}{M_r / M}}\nonumber\\
+        &= \frac{1}{(\xi / \xi_1)(\theta'(\xi) / \theta'(\xi_1))}.
+\end{align}
+Note that $U(\xi \to 1) = 3$ and $c_1(\xi \to 0) \propto -1 / \xi^2$.
+
+There's a small point of contention about $c_s$ and $N$, since they depend on
+the adiabatic index $\Gamma_1$ and not just the polytropic index $\Gamma$. It
+takes a bit of digging, but Mullan \& Ulrich 1988 point out that $\Gamma_1 =
+5/3$ is used in all of their models. Thus, we have the remaining quantities in
+the Le Bihan formulation:
+\begin{align}
+    c_s^2(\xi) &= \Gamma_1\frac{P}{\rho} = \Gamma_1 K\rho_c^{1/n}\theta(\xi)
+        ,\\
+    N^2(\xi) &= g^2\p{\rd{\rho}{P} - \frac{1}{c_s^2}}\nonumber\\
+        &= \p{\frac{1}{\Gamma} - \frac{1}{\Gamma_1}}
+            g^2\frac{\rho}{P}\nonumber\\
+    A^* &= \frac{N^2r}{g} = \frac{\rho gr}{P}\p{\frac{1}{\Gamma} -
+            \frac{1}{\Gamma_1}}\nonumber\\
+        &= \p{\frac{1}{\Gamma} - \frac{1}{\Gamma_1}}
+            \p{-4\pi G \alpha \rho_c \theta'(\xi)}\p{\alpha \xi}
+            \frac{1}{K\rho_c^{1/n}\theta(\xi)}\nonumber\\
+        &= \p{\frac{1}{\Gamma} - \frac{1}{\Gamma_1}}
+            \p{-4\pi G \rho_c^{1 - 1/n}}
+                \alpha^2
+            \frac{\xi \theta'(\xi)}{K\theta(\xi)}\nonumber\\
+        &= -\p{\frac{1}{\Gamma} - \frac{1}{\Gamma_1}}
+            \frac{(n + 1)\xi \theta'(\xi)}{\theta(\xi)}\nonumber\\
+    V_g &= \frac{gr}{c_s^2}\nonumber\\
+        &= A^* \frac{1 / \Gamma_1}{1 / \Gamma - 1 / \Gamma_1}\nonumber\\
+        &= -\frac{1}{\Gamma_1} \frac{(n + 1)\xi \theta'(\xi)}{\theta(\xi)}
+\end{align}
+
+\subsection{Oscillation Equations}
+
+\subsubsection{Physical Form}
+
+Let's rederive the oscillation equations too, all the way through the
+nondimensionalized form (we did this in Dong's class). We start with the Euler
+Equations and Poisson equation
+\begin{align}
+    \pd{\rho}{t} + \vec{\nabla} \cdot \p{\rho \vec{v}} &= 0,\\
+    \pd{\vec{u}}{t} + \p{\vec{u} \cdot \vec{\nabla}}\vec{u}
+        + \frac{\vec{\nabla}P}{\rho} &= -\vec{\nabla} \Phi,\\
+    \nabla^2 \Phi = 4\pi G\rho.
+\end{align}
+We expand $x = x_0 + \delta x$ for each of $x = P, \rho, \Phi$. Then we assume
+an adiabatic EOS
+\begin{equation}
+    \frac{\Delta P}{\Delta \rho} = c_s^2,
+\end{equation}
+where $\Delta$ is the Lagrangian perturbation, and we have the useful relation
+\begin{align}
+    \delta \vec{v} &= \rd{\vec{\xi}}{t}, &
+    \Delta x &= \delta x + \p{\vec{\xi} \cdot \vec{\nabla}}x.
+\end{align}
+equilibrium $\rdil{P_0}{r} = -\rho_0 g$. The goal is to take FTs and cast
+everything into $\xi_r$, $\delta P$, and $\delta \Phi$ with only three equations
+of motion.
+
+Then we first tackle the density equation. There is no leading order term, so we
+directly analyze the perturbative component. There are two forms that I think
+might be useful:
+\begin{align}
+    \cancel{\pd{\rho_0}{t}} +
+    \pd{(\delta \rho)}{t} + \vec{\nabla} \cdot \p{\rho_0 \delta \vec{u}}
+        &= 0,\nonumber\\
+    \delta \rho &= -\vec{\nabla} \cdot \p{\rho_0 \vec{\xi}},\\
+    \rd{(\delta \rho)}{t} &= -\rho_0\p{\vec{\nabla} \cdot \p{\delta \vec{u}}}
+        ,\nonumber\\
+    \Delta \rho &= -\rho_0\p{\vec{\nabla} \cdot \vec{\xi}}.\label{eq:pert_dens}
+\end{align}
+Next, we tackle the momentum equation. The zeroth order term is just hydrostatic
+equilibrium, corresponding to $\vec{\nabla}P_0 / \rho_0 = -\vec{\nabla} \Phi_0$,
+which gives $g = \vec{\nabla} \Phi_0$. The first order term is
+\begin{align}
+    \pd{(\delta \vec{u})}{t} + \frac{\vec{\nabla} (\delta P)}{\rho_0}
+        - \frac{(\delta \rho) \vec{\nabla}P_0}{\rho_0^2} &=
+        -\vec{\nabla}\p{\delta \Phi},\nonumber\\
+    \ptd{\vec{\xi}}{t} + \frac{\vec{\nabla}(\delta P)}{\rho_0}
+        - \frac{\delta \rho \vec{\nabla}P_0}{\rho_0^2} &= \vec{\nabla}(\delta
+        \Phi).\label{eq:pert_mom}
+\end{align}
+We go ahead and substitute $\partial_t \to i\omega$. The perpendicular and
+parallel components of Eq.~\eqref{eq:pert_mom} are:
+\begin{align}
+    \hat{r} &: -\omega^2 \xi_r + \frac{1}{\rho_0}\pd{}{r}(\delta P)
+         + \frac{\delta r}{\rho_0}g = -\pd{}{r}\delta \Phi,\\
+    \perp &: -\omega^2 \vec{\xi}_\perp + \frac{\vec{\nabla}_\perp (\delta P)}{
+        \rho_0} = -\vec{\nabla}\p{\delta\Phi}\nonumber\\
+        &\; -\omega^2\vec{\xi}_\perp = -\vec{\nabla}\p{\frac{\delta P}{\rho_0}
+            + \delta \Phi}.
+\end{align}
+Combining the perpendicular component with Eq.~\eqref{eq:pert_dens}, we can
+rewrite (and substitute in $Y_{lm}$'s)
+\begin{align}
+    \Delta \rho &= -\rho_0\p{\frac{1}{r^2}\ptd{}{r}\p{r^2\xi_r}
+            + \nabla_\perp^2 \p{\frac{\delta P}{\rho_0\omega^2} + \frac{\delta
+            \Phi}{\omega^2}}},\nonumber\\
+    -\frac{\Delta \rho}{\rho_0}
+        &= \frac{1}{r^2}\pd{}{r}\p{r^2\xi_r}
+            - \frac{l(l + 1)}{r^2\omega^2}\p{\frac{\delta P}{\rho_0}
+                + \delta \Phi},\nonumber\\
+    &= -\frac{\Delta P}{c_s^2\rho_0} = -\frac{\delta P}{c_s^2\rho_0}
+            + \frac{\xi_r g}{c_s^2}.
+\end{align}
+To rewrite the radial component of the momentum equation, we first define $N^2$
+and rewrite:
+\begin{align}
+    N^2 &\equiv g^2\p{\rd{\rho_0}{P_0} - \frac{1}{c_s^2}},\\
+    \frac{N^2}{g^2} + \frac{1}{c_s^2} &= \frac{\rdil{\rho_0}{r}}{
+        \rdil{P_0}{r}},\nonumber\\
+    \delta \rho&= \Delta \rho - \xi_r \pd{\rho_0}{r}\nonumber\\
+        &= \frac{\Delta P}{c_s^2} - \xi_r\p{\frac{N^2}{g^2} + \frac{1}{c_s^2}}
+            \p{-\rho_0 g}\nonumber\\
+        &= \frac{\delta P}{c_s^2} + \xi_r \frac{N^2}{g^2}.
+\end{align}
+Then the radial component is straightforwardly
+\begin{equation}
+    \frac{1}{\rho_0}\pd{}{r}\delta P
+        + \pd{}{r}\p{\delta \Phi}
+        - \omega^2\xi_r
+        + \frac{g}{\rho_0}\p{\frac{\delta P}{c_s^2} + \xi_r \frac{N^2\rho_0}{g}}
+        = 0.
+\end{equation}
+Finally, the Poisson equation is simplified straightforwardly (with spherical
+harmonic dependence) to
+\begin{align}
+    \nabla^2\p{\delta \Phi} &= 4\pi G \delta \rho,\nonumber\\
+    \frac{1}{r^2}\pd{}{r}\p{r^2\pd{}{r}(\delta \Phi)}
+        - \frac{l(l + 1)}{r^2}(\delta \Phi)
+        &= 4\pi G \rho_0\p{\frac{\delta P}{\rho_0 c_s^2}
+            + \xi_r\frac{N^2}{g}}.
+\end{align}
+Thus, the three equations for radial oscillations are a combination of: the
+perpendicular momentum equation in combination with the density equation, the
+radial momentum equation, and the Poisson equation. For posterity, they are
+(with slight rearrangements):
+\begin{align}
+    \frac{1}{r^2}\pd{}{r}\p{r^2\xi_r}
+            - \frac{g}{c_s^2}\xi_r
+            + \p{1 - \frac{l(l + 1)c_s^2}{r^2\omega^2}}
+                \frac{\delta P}{c_s^2\rho_0}
+            - \frac{l(l + 1)}{r^2\omega^2}\delta \Phi
+        &= 0,\label{eq:pert_dim1}\\
+    \frac{1}{\rho_0}\pd{}{r}\delta P
+        + \pd{}{r}\delta \Phi
+        + \frac{g}{\rho_0c_s^2}\delta P
+        + \p{N^2 - \omega^2}\xi_r
+        &= 0,\label{eq:pert_dim2}\\
+    \frac{1}{r^2}\pd{}{r}\p{r^2\pd{}{r}(\delta \Phi)}
+        - \frac{l(l + 1)}{r^2}(\delta \Phi)
+        - 4\pi G \rho_0
+            \p{\frac{\delta P}{\rho_0 c_s^2} + \xi_r\frac{N^2}{g}} &= 0.
+            \label{eq:pert_dim3}
+\end{align}
+This constitutes 3 ODEs for 3 quantities, but one is second order. To make a
+reduction to first order, $\p{\delta \Phi}'$ constitutes a fourth variable.
+
+\subsection{Nondimensional Form}
+
+To nondimensionalize, we use the variables recommended in Unno's 1979 book (and
+by Le Bihan). They are:
+\begin{align}
+    y_1 &= \frac{\xi_r}{r},\\
+    y_2 &= \frac{1}{gr}\p{\frac{\delta P}{\rho_0} + \delta \Phi},\\
+    y_3 &= \frac{1}{gr}\delta \Phi,\\
+    y_4 &= \frac{1}{g} \rd{}{r}\delta \Phi,\\
+    x &= \frac{r}{R}.
+\end{align}
+To make this substitution, it helps not to use the fully-simplified forms
+initially. For instance, to simplify Eq.~\eqref{eq:pert_dim1}, it helps to start
+with the earlier form (primes denote $\partial_r$; we will explicitly denote $x$
+derivatives)
+\begin{align}
+    -\frac{\delta P}{c_s^2\rho_0} + \frac{\xi_r g}{c_s^2}
+        &= \frac{1}{r^2}\pd{}{r}(r^2\xi_r)
+        - \frac{l(l + 1)}{r^2 \omega^2}\p{\frac{\delta P}{\rho_0} + \delta \Phi}
+        ,\nonumber\\
+    -\frac{1}{c_s^2}\p{gry_2 - \delta \Phi} + \frac{ry_1 g}{c_s^2}
+        &= \frac{1}{r^2}\pd{}{r}(r^3y_1)
+        - \frac{l(l + 1)}{r^2 \omega^2}gry_2
+        ,\nonumber\\
+    -\frac{gr}{c_s^2}\p{y_2 - y_3} + \frac{ry_1 g}{c_s^2}
+        &= 3y_1 + ry_1'
+        - \frac{l(l + 1)}{r^2 \omega^2}gry_2
+        ,\nonumber\\
+    ry_1' &= -\frac{gr}{c_s^2}\p{y_2 - y_3} + \frac{y_1 gr}{c_s^2}
+            + \frac{l(l + 1)}{r^2 \omega^2}gry_2
+            - 3y_1\nonumber\\
+    xy_1'(x) &= \p{\frac{gr}{c_s^2} - 3}y_1
+            + \s{\frac{l(l + 1)g}{r\omega^2} - \frac{gr}{c_s^2}}y_2
+            + \frac{gr}{c_s^2}y_3.
+\end{align}
+To simplify Eq.~\eqref{eq:pert_dim2}, we do
+\begin{align}
+    \delta P &= (y_2 - y_3)gr\rho_0,\\
+    0 &= \frac{1}{\rho_0}\pd{((y_2 - y_3)gr\rho_0)}{r}
+            + \pd{\p{gry_2}}{r}
+            + \frac{g(y_2 - y_3)gr\rho_0}{\rho_0c_s^2}
+            + \p{N^2 - \omega^2}ry_1,\nonumber\\
+        &= \frac{\rho_0'(y_2 - y_3)gr}{\rho_0}
+            + \pd{\p{gry_2}}{r}
+            + \frac{g(y_2 - y_3)gr\rho_0}{\rho_0c_s^2}
+            + \p{N^2 - \omega^2}ry_1,\nonumber\\
+    ry_2' &= -\frac{\rho_0'(y_2 - y_3)r}{\rho_0}
+            - y_2\frac{(gr)'}{g}
+            - \frac{(y_2 - y_3)gr}{c_s^2}
+            - \frac{\p{N^2 - \omega^2}}{g}ry_1,\nonumber\\
+    xy_2'(x) &= \frac{\p{\omega^2 - N^2}}{g}ry_1
+            - \p{\frac{\rho_0' r}{\rho_0} + \frac{(gr)'}{g} + \frac{gr}{c_s^2}}y_2
+            + \p{\frac{\rho_0' r}{\rho_0} + \frac{gr}{c_s^2}}y_3,\nonumber\\
+    \frac{\rho_0' r}{\rho_0} &= \p{\frac{N^2}{g^2} + \frac{1}{c_s^2}}\p{-gr},\\
+    xy_2'(x) &= \frac{\p{\omega^2 - N^2}}{g}ry_1
+            + \p{\frac{N^2r}{g} - \frac{(gr)'}{g}}y_2
+            - \frac{N^2r}{g}y_3,\nonumber\\
+    \frac{1}{r^2}\pd{}{r}\p{r^2\pd{\Phi_0}{r}} &= 4\pi G \rho_0,\nonumber\\
+    \pd{}{r}\p{r^2g} &= 4\pi G\rho_0r^2,\nonumber\\
+    r(gr)' &= 4\pi G\rho_0r^2 - gr,\nonumber\\
+    \frac{(gr)'}{g} &= \frac{4\pi \rho_0 r^3}{M_r} - 1,\\
+    xy_2'(x) &= \s{\frac{\omega^2r}{g} - \frac{N^2r}{g}}y_1
+            + \p{\frac{N^2r}{g} + 1 - \frac{4\pi \rho_0 r^3}{M_r}}y_2
+            - \frac{N^2r}{g}y_3.
+\end{align}
+Eq.~\eqref{eq:pert_dim3} also follows:
+\begin{align}
+    0 &= \frac{1}{r^2}\p{r^2gy_4}'
+            - \frac{l(l+1)}{r^2}gry_3
+            - 4\pi G \rho_0\p{
+                \frac{(y_2 - y_3)gr\rho_0}{\rho_0c_s^2}
+                + ry_1\frac{N^2}{g}
+            },\nonumber\\
+    0 &= (gr^2)'\frac{y_4}{r} + gry_4'
+            - \p{l(l+1)}gy_3
+            - 4\pi G \rho_0r\p{
+                \frac{(y_2 - y_3)gr}{c_s^2}
+                + y_1\frac{N^2r}{g}
+            },\nonumber\\
+    ry_4' &= -(4\pi G\rho_0r^2)\frac{y_4}{gr}
+            + \p{l(l+1)}y_3
+            + \frac{4\pi G\rho_0 r}{g}
+                \p{
+                    \frac{(y_2 - y_3)gr}{c_s^2}
+                    + y_1\frac{N^2r}{g}
+                },\nonumber\\
+        &= \frac{4\pi \rho_0r^3}{M_r}\s{-y_4
+                + \frac{(y_2 - y_3) gr}{c_s^2}
+                + \frac{N^2r}{g}y_1}
+            + l(l+1)y_3.
+\end{align}
+Finally, the implicit equation is
+\begin{align}
+    (gry_3)' &= gy_4,\nonumber\\
+    ry_3' &= y_4 - \frac{(gr)'}{g}y_3\nonumber\\
+        &= y_4 - \s{\frac{4\pi \rho_0 r^3}{M_r} - 1}y_3.
+\end{align}
+Defining the constants
+\begin{align}
+    V_g &= \frac{gr}{c_s^2},\\
+    U &= \frac{4\pi \rho_0 r^3}{M_r},\\
+    c_1 &= \textcolor{red}{\frac{(r / R)^3}{M_r / M}},\\
+    \bar{\omega}^2 &= \frac{\omega^2R^3}{GM},\\
+    A^* &= \frac{N^2r}{g},
+\end{align}
+then we obtain
+\begin{align}
+    \frac{g}{r\omega^2} &= \frac{GM_r / r^2}{rGM\bar{\omega}^2/R^3}
+        = \frac{M_r / M}{x^3}\frac{1}{\bar{\omega}^2}
+        = \frac{1}{c_1\bar{\omega}^2},\nonumber\\
+    xy_1' &= \p{V_g - 3}y_1 +
+        \s{\frac{l(l+1)}{c_1\bar{\omega}^2}
+            - V_g}y_2
+        + V_gy_3,\\
+    xy_2' &= \s{c_1\bar{\omega}^2 - A^*}y_1
+        + \p{A^* + 1 - U}y_2
+        \textcolor{red}{- A^* y_3},\\
+    xy_3' &= \p{1 - U}y_3 + y_4,\\
+    xy_4' &= UA^*y_1
+        + UV_gy_2
+        + \s{l(l+1) - UV_g}y_3
+        \textcolor{red}{- Uy_4}.
+\end{align}
+The red parts differ from the Le Bihan paper. Notably, $c_1$ differs from the Le
+Bihan paper, and we should obtain
+\begin{equation}
+    \textcolor{red}{c_1 = \frac{\p{r / R}^3}{M_r / M}
+        = \frac{\xi / \xi_1}{\theta'(\xi) / \theta'(\xi_1)}}.
+\end{equation}
+Note that in this case, $c_1(\xi \to 0) = -3\theta'(\xi_1) / \xi_1$ is finite.
+As such, we have fully constrained the eigenvalue problem for $\z{y_i(x),
+\omega}$ in terms of the fields $V_g$, $c_1$, $A^*$, and $U$.
+
+\subsection{Boundary Conditions / Behavior}
+
+Near $x = 0$, $V_g, A^* \propto x^2$ while $U \approx 3$ and $c_1 \approx
+-3\rdil{\theta(1)}{x}$. The inner BCs are standard (we read from Le Bihan, but
+Fuller 2017 also seems to have similar):
+\begin{align}
+    0 &= \xi_r - \frac{l}{\omega^2 r}\p{\frac{\delta P}{\rho_0} + \delta \Phi}
+        ,\\
+    0 &= \rd{(\delta \Phi)}{r} - \frac{l}{r}\delta \Phi.
+\end{align}
+These nondimensionalize to
+\begin{align}
+    0 &= ry_1 - \frac{l}{\omega^2r}gry_2\nonumber\\
+        &= y_1 - l\frac{GM_r / r^2}{rGM\bar{\omega}^2 / R^3}y_2\nonumber\\
+        &= y_1 - \frac{l}{c_1\bar{\omega}^2}y_2,\\
+    0 &= gy_4 - \frac{l}{r}gry_3\nonumber\\
+        &= y_4 - ly_3.
+\end{align}
+In order then for $xy_3' \to 0$ as $x \to 0$, we require $xy_3' \propto
+(l-2)y_3$ or that
+\begin{equation}
+    y_3(x \ll 1) \sim x^{l - 2}.
+\end{equation}
+In addition, for $xy_1' \to 0$, we obtain $-3 y_1 + (l + 1)y_1 = xy_1'$, so we
+also find
+\begin{equation}
+    y_1(x \ll 1) \sim x^{l - 2}.
+\end{equation}
+What about the other two $y_i'$ equations? Well, $xy_2' = ly_2 - 2y_2$, so $y_2
+\sim x^{l - 2}$ as well, and $xy_4' = (l+1)y_4 - 3y_4$, so $y_4 \sim x^{l - 2}$
+at last. These two BCs constrain two DOF\@; the overall normalization is a third
+DOF, and the ratio $y_3 / y_1$ is a fourth. So we choose two different $y_3 /
+y_1$ in constructing our solutions.
+
+As for the outer BCs, they are (small correction to Le Bihan; consistent with
+Fuller)
+\begin{align}
+    0 &= \rd{(\delta \Phi)}{r} + \textcolor{red}{\frac{(l + 1)}{r}}\delta \Phi,\\
+    0 &= \Delta P = \delta P - \xi_r g\rho_0.
+\end{align}
+Nondimensionalizing, we obtain
+\begin{align}
+    0 &= gy_4 + \frac{(l + 1)}{r}gry_3\nonumber\\
+        &= y_4 + (l + 1)y_3,\\
+    0 &= gr\rho_0 (y_2 - y_3) - gr\rho_0 y_1\nonumber\\
+        &= y_1 - y_2 + y_3.
+\end{align}
+Near the surface, $V_g$ and $A^*$ diverge, $U \to 0$, and $c_1 \to 1$. First, we
+note that $xy_3' = y_3 + y_4 = y_3 - (l + 1)y_3 = -ly_3$, and so
+\begin{equation}
+    y_3\p{x \to 1} \sim x^{-l}.
+\end{equation}
+For $y_1$, we look at the singular terms in $xy_1'$ and $xy_2'$, but $xy_1' =
+V_g\p{y_1 - y_2 + y_3}$ and $xy_2' = -A^*\p{y_1 - y_2 + y_3}$ both identically
+cancel (which is good, since the LHS doesn't have a divergence to cancel these
+out!). So, doing a bit more work, the other equations are
+\begin{align}
+    xy_1' &= -3y_1 + \frac{l(l+1)}{\bar{\omega}^2}y_2,\\
+    xy_2' &= \bar{\omega}^2y_1 + y_2,\\
+    xy_4' &= UA^*y_1 + UV_g(y_2 + y_4 / (l + 1)) - ly_4.
+\end{align}
+Note that
+\begin{equation}
+    UV_g \propto UA^* = \frac{4\pi \rho_0 R^3}{M_r}\frac{GM_r/R}{c_s^2}
+        \propto \frac{4\pi G\rho_c\theta^n(1) R^2}{\theta(1)}
+        \propto \theta^{n - 1}(1).
+\end{equation}
+This is zero if $n > 1$. Thus, the last equation shows $y_4 \propto x^{-l}$ as
+well. If we also want $y_1, y_2 \propto x^{p}$, then we need ($z \equiv
+y_1\bar{\omega}^2$)
+\begin{align}
+    pz &= -3z + l(l+1)y_2,\\
+    py_2 &= z + y_2,\\
+    (p+3)(p-1) &= l(l+1).
+\end{align}
+This doesn't work! Thus, $y_1$ and $y_2$ have different power law behaviors at
+the edge, so we should instead write
+\begin{align}
+    p_1z &= -3z + l(l+1)y_2,\\
+    p_2y_2 &= z + y_2,\\
+    (p_1+3)(p_2-1) &= l(l+1).
+\end{align}
+Then either $p_2 = l + 1, p_1 = l - 2$ or $p_2 = l + 2$ and $p_1 = l - 3$. Le
+Bihan says that the correct one to use is
+\begin{align}
+    y_1 \sim x^{l - 2}, & \quad y_2 \sim x^{l + 1}.
+\end{align}
 
 \end{document}
 
