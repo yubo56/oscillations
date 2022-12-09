@@ -32,9 +32,9 @@ def dydx(x, y, wsq, l, Vg_x, U_x, c1_x, As_x):
 
     return np.array([
         y1 * (Vg - 3) + (l * (l + 1) / (c1 * wsq) - Vg) * y2 + Vg * y3,
-        (c1 * wsq - As) * y1 + (As - U + 1) * y2 - As * y3,
+        (c1 * wsq - As) * y1 + (As - U + 1) * y2 + As * y3,
         (1 - U) * y3 + y4,
-        U * As * y1 + U * Vg * y2 + (l * (l + 1) - U * Vg) * y3 - U * y4,
+        U * As * y1 + U * Vg * y2 + (l * (l + 1) - U * Vg) * y3 + U * y4,
     ]) / x
 
 def wrons(wsq, l, Vg_x, U_x, c1_x, As_x, xmid=XMID, eps=EPS, atol=1e-9,
@@ -441,7 +441,7 @@ def sweep_polytrope(n=3, l=1, wsq_arr=np.linspace(2, 20, 201), nthreads=16,
             ]
             wsq_crits = p.starmap(opt_func, args)
         for wsq_crit in wsq_crits:
-            x_crit, y_crit = get_y(wsq_crit, l, Vg_x, U_x, c1_x, As_x,
+            x_crit, y_crit = get_y(wsq_crit, l, Vg_x, U_x, c1_x, As_x, eps=eps,
                                    rtol=rtol, atol=atol, method=method)
             x_crit_lst.append(x_crit)
             y_crit_lst.append(y_crit)
@@ -484,20 +484,25 @@ if __name__ == '__main__':
 
     # build_polytrope(plot=True)
 
-    x, Vg_x, U_x, c1_x, As_x = build_polytrope(3)
+    # x, Vg_x, U_x, c1_x, As_x = build_polytrope(3)
     # print('Vg (0, inf):', Vg_x(EPS), Vg_x(1))
     # print('U (3, 0):', U_x(EPS), U_x(1))
     # print('c1 (>0, 1):', c1_x(EPS), c1_x(1))
     # print('As (0, inf):', As_x(EPS), As_x(1))
     # wrons(74, 2, Vg_x, U_x, c1_x, As_x)
 
-    # x, Vg_x, U_x, c1_x, As_x = build_polytrope(3)
-    # acc = opt_func(73, 76, 2, Vg_x, U_x, c1_x, As_x, method='DOP853',
-    #                atol=1e-12, rtol=1e-12)
+    # tol = 1e-9
+    # eps = 1e-2
+    # x, Vg_x, U_x, c1_x, As_x = build_polytrope(3, eps=eps)
+    # l = 1
+    # acc = opt_func(45, 55, l, Vg_x, U_x, c1_x, As_x, method='DOP853',
+    #                atol=tol, rtol=tol, eps=eps)
     # print(acc)
     # print(np.sqrt(G * MSUN / (4 * np.pi**2 * RSUN**3) * acc) * MHZ)
-    # x, y = get_y(acc, 2, Vg_x, U_x, c1_x, As_x, method='DOP853', atol=1e-12,
-    #              rtol=1e-12)
+    # eps=1e-8, tol=1e-12: 703.8434337740523
+    # eps=1e-2, tol=1e-12: 710.2044325418785
+    # x, y = get_y(acc, l, Vg_x, U_x, c1_x, As_x, method='DOP853', atol=tol,
+    #              rtol=tol, eps=eps)
     # plt.loglog(x, y[0], 'k')
     # plt.loglog(x, -y[0], 'k--')
     # plt.axvline(XMID, c='b')
