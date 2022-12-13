@@ -137,9 +137,7 @@ stellar profiles, but we don't have the correct non-singular solution near the
 core. Due to this, the matrix determinants in the core-surface solution matching
 are large, and so we suffer from some loss of numerical precision.
 
-\section{12/07/22}
-
-\subsection{Polytrope Solution}
+\section{Polytrope Notes}
 
 Let's review how to obtain the structure of a polytrope. The equations of
 hydrostatic equilibrum are:
@@ -315,9 +313,9 @@ parallel components of Eq.~\eqref{eq:pert_mom} are:
     \hat{r} &: -\omega^2 \xi_r + \frac{1}{\rho_0}\pd{}{r}(\delta P)
          + \frac{\delta r}{\rho_0}g = -\pd{}{r}\delta \Phi,\\
     \perp &: -\omega^2 \vec{\xi}_\perp + \frac{\vec{\nabla}_\perp (\delta P)}{
-        \rho_0} = -\vec{\nabla}\p{\delta\Phi}\nonumber\\
-        &\; -\omega^2\vec{\xi}_\perp = -\vec{\nabla}\p{\frac{\delta P}{\rho_0}
-            + \delta \Phi}.
+        \rho_0} = -\vec{\nabla}_\perp\p{\delta\Phi}\nonumber\\
+        &\; -\omega^2\vec{\xi}_\perp = -\vec{\nabla}_\perp
+            \p{\frac{\delta P}{\rho_0} + \delta \Phi}\label{eq:momperp}.
 \end{align}
 Combining the perpendicular component with Eq.~\eqref{eq:pert_dens}, we can
 rewrite (and substitute in $Y_{lm}$'s)
@@ -614,9 +612,9 @@ accepted $\xi$ instead\dots welp.
 
 I changed the signs back to those in Le Bihan, and I get frequencies that are
 closer to theirs. So could it be possible that they didn't just make a typo, and
-have a different version of the Equations? Let's check whether the Christiansen
-\& Dalsgaard paper also has the same signs as Le Bihan. Their nondimensional
-quantities are
+have a different version of the Equations? Let's check whether the
+Christiansen-Dalsgaard paper also has the same signs as Le Bihan. Their
+nondimensional quantities are
 \begin{align}
     z_1 &= \frac{\xi_r}{R} = xy_1,\\
     z_3 &= x\frac{\delta \Phi}{gr} = xy_3,\\
@@ -743,7 +741,7 @@ coefficient in our expressions for $y_2'(x)$!
 
 \subsubsection{Why is Everything Wrong? Here's a Guess:}
 
-Maybe the Christiansen \& Dalsgaard paper uses the opposite sign convention for
+Maybe the Christiansen-Dalsgaard paper uses the opposite sign convention for
 $\Phi$. In this case, the expressions would be amended to:
 \begin{align}
     z_1 ={}& xy_1,\\
@@ -776,7 +774,7 @@ $\Phi$. In this case, the expressions would be amended to:
             + \s{l(l+1) - U(V_g) }y_3 - Uy_4.
 \end{align}
 Remarkably, this is in agreement with what we found. Thus, \textbf{we find that
-our derived equations are in agreement with Christiansen \& Dalsgaard, but have
+our derived equations are in agreement with Christiansen-Dalsgaard, but have
 small sign discrepancies with Le Bihan.}
 
 \textbf{Note:} In hindsight, this had to just be a simple typo in the Le Bihan
@@ -833,6 +831,99 @@ Recall that the central values for these are
     A^*(0) &= \frac{(n + 1) \epsilon^2}{3}\p{\frac{1}{\Gamma} - \frac{1}{\Gamma_1}}.
 \end{align}
 This procedure seems to be giving the correct eigenfrequencies now!
+
+\subsection{Mode Order: Another sign error?}
+
+In Le Bihan, the mode order is given by
+\begin{equation}
+    n \equiv \sum\limits_{x_{z1} > 0} \textcolor{red}{+}
+        \mathrm{sgn}\p{y_2\rd{y_1}{x}} + n_0,
+\end{equation}
+where $y_1\p{x_{z_1}} = 0$ are the nodes of the radial displacement $\xi_r
+\equiv ry_1$. However, this seems to give the wrong sign for us, so we again
+check the citation for Christiensen-Dalsgaard 1994. Here, they define the sign
+of the mode to be whether the mode moves clockwise (g; negative) or
+counterclockwise (p; positive) in $\sqrt{\rho r}\z{\xi_r, \xi_h}$ coordinate
+space. In other words, if $\xi_r$ has a zero, $\xi_r'$ (the derivative) is
+negative, and $\xi_h > 0$, then motion is counterclockwise in this plane. We
+require this contribution to be positive to $n$, so there should be a missing
+negative sign.
+
+Let's do a few checks. Do we agree that $z_2 \propto \xi_h$? Well, referring
+back to our derivation of the oscillation equations, we had
+Eq.~\eqref{eq:momperp} where
+\begin{align}
+    -\omega^2\vec{\xi}_\perp &= -\vec{\nabla}_\perp
+        \p{\frac{\delta P}{\rho_0} + \delta \Phi}.
+\end{align}
+Well, actually, I noticed in my ASTRO6531 notes that
+\begin{equation}
+    \vec{\xi}_\perp = \xi_\perp(r)r\vec{\nabla}_\perp Y_{lm}.
+\end{equation}
+This directly pops out that $\xi_\perp(r)r = \p{\delta P / \rho_0 + \delta
+\Phi}$. This seems clear enough in hindsight:
+\begin{equation}
+    -\frac{\Delta \rho}{\rho_0} \propto Y_{lm}
+        = \vec{\nabla} \cdot \vec{\xi}
+        = \frac{1}{r^2}\pd{}{r}\p{r^2\xi_r}
+            + \vec{\nabla}_\perp \cdot \xi_\perp.
+\end{equation}
+In order for the last quantity to be $\propto Y_{lm}$, we of course need
+$\xi_\perp \propto \vec{\nabla}_\perp Y_{lm}$.
+
+\subsection{Brief Aside: p vs g modes}
+
+Let's also think about why we identify these signs with $p$ and $g$ modes
+respectively. Following my notes from Dong's ASTRO6531, we begin with
+Eqs.~(\ref{eq:pert_dim1}--\ref{eq:pert_dim3}) and take the Cowling approximation
++ WKB limit. Then $\delta \Phi \to 0$ and $\partial_r \to ik_r$, and we obtain
+($\partial_r (r^2\xi_r) = ik_rr^2\xi_r$ is the best prescription)
+\begin{align}
+    i\xi_rk_r - \frac{g}{c_s^2}\xi_r
+        + \p{1 - \frac{l(l+1)c_s^2}{r^2\omega^2}}
+            \frac{\delta P}{c_s^2\rho_0} &= 0,\\
+    i\frac{1}{\rho_0}\delta P k_r + \frac{g}{\rho_0c_s^2}\delta P
+        + \p{N^2 - \omega^2}\xi_r &= 0,\label{eq:eom_cowling}\\
+    ik_r - \frac{g}{c_s^2}
+        - \p{1 - \frac{l(l+1)c_s^2}{r^2\omega^2}}
+            \frac{N^2 - \omega^2}{c_s^2\rho_0
+                \p{\frac{1}{\rho_0}ik_r + \frac{g}{\rho_0c_s^2}}}
+            &= 0\nonumber\\
+    ik_r - \frac{g}{c_s^2}
+        - \frac{\p{\omega^2 - L^2}\p{N^2 - \omega^2}}{\omega^2
+            (ik_rc_s^2 + g)}
+            &=\nonumber\\
+    \frac{\p{\omega^2 - L^2}\p{\omega^2 - N^2}}{\omega^2}
+        &= k_r^2c_s^2 + \frac{g^2}{c_s^2}.
+\end{align}
+Note that $L^2 = l(l+1)c_s^2/r^2$. I'm not sure how my ASTRO6531 notes can
+ignore the $g^2/c_s^2$ term, but maybe it's small? Additionally, the WKB limit
+should only be valid for large $k_r$ (short wavelength), so this also checks
+out. Then, in this case, we find the usual result that $\omega > N, \omega > L$
+for p-modes and $\omega < N, \omega < L$ for g-modes.
+
+What does this mean in terms of the wavefunctions? Well, we found that
+\begin{align}
+    \delta P &= \frac{\omega^2 - N^2}{\frac{1}{\rho_0}ik_r}\xi_r\nonumber\\
+        &= -i\rho_0\frac{\omega^2 - N^2}{k_r}\xi_r.
+\end{align}
+Thus, if $\omega > N$, then $\delta P$ \emph{trails} $\xi_r$ in phase, and if
+$\omega < N$, $\delta P$ \emph{leads} $\xi_r$ in phase. Thus, for p-modes,
+$\delta P$ should trail $\xi_r$ in phase, and so when $\xi_r$ crosses zero (from
+positive to negative), $\delta P$ should still be positive. Thus, indeed, our
+sign convention is correct and Le Bihan is missing a negative sign!
+
+Finally, note that
+\begin{equation}
+    n_0 =
+    \begin{cases}
+        1 & y_1(x_{\rm in}) / y_2(x_{\rm in}) < 0\\
+        0 & y_1(x_{\rm in}) / y_2(x_{\rm in}) > 0,
+    \end{cases}
+\end{equation}
+is only relevant when we start solving for an envelope rather than the full
+body, since if $x_{\rm in} = 0$ then the inner BC always forces $y_1 / y_2 > 0$
+and thus $n_0 = 0$.
 
 \end{document}
 

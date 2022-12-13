@@ -19,6 +19,7 @@ plt.rc('font', family='serif', size=20)
 plt.rc('lines', lw=2.5)
 plt.rc('xtick', direction='in', top=True, bottom=True)
 plt.rc('ytick', direction='in', left=True, right=True)
+plt.rc('figure', figsize=(8.0, 8.0), dpi=300)
 import os, pickle, lzma
 
 from scipy.integrate import solve_ivp
@@ -59,7 +60,7 @@ def wrons(wsq, l, ptrope_sol, x1, xmid=XMID, eps=EPS, atol=1e-9,
     g1 = 1
     g2 = -1
     yc_0_base = eps**(l - 2)
-    c1_eps = ptrope_sol(eps / x1)[2]
+    c1_eps = ptrope_sol(eps / x1)[2] / ptrope_sol(x1)[2]
     yc1_0 = [
         yc_0_base,
         c1_eps * wsq / l * yc_0_base,
@@ -123,7 +124,7 @@ def get_y(wsq, l, ptrope_sol, x1, xmid=XMID, eps=EPS, **kwargs):
     g1 = 1e-3
     g2 = -1e-3
     yc_0_base = 1e3 # eps**(l - 2)
-    c1_eps = ptrope_sol(eps / x1)[2]
+    c1_eps = ptrope_sol(eps / x1)[2] / ptrope_sol(x1)[2]
     yc1_0 = [
         yc_0_base,
         c1_eps * wsq / l * yc_0_base,
@@ -280,44 +281,64 @@ def sweep_polytrope(n=3, l=1, wsq_arr=np.linspace(2, 20, 201), nthreads=16,
             (w_arr, cands_left, cands_right, wsq_crits, x_crit_lst, y_crit_lst) = pickle.load(f)
 
     wsq_crits = np.array(wsq_crits)
+    nu_mhzs = np.sqrt(
+        G * MSUN / (4 * np.pi**2 * RSUN**3) * wsq_crits) * MHZ
+
     plt.semilogy(wsq_arr, w_arr, 'k')
     plt.semilogy(wsq_arr, -w_arr, 'k--')
     plt.xlabel('wsq')
     plt.ylabel('det W')
     plt.tight_layout()
-    plt.savefig('%s_sweep' % fn, dpi=200)
+    plt.savefig('%s_sweep' % fn)
     plt.close()
+
+    # print mode orders & freqs
+    for x_crit, y_crit, nu in zip(x_crit_lst, y_crit_lst, nu_mhzs):
+        # get the mode order (ignore innermost points)
+        offset = 3
+        y1_zero_idxs = np.where(
+            y_crit[0, offset + 1: ] / y_crit[0, offset:-1] < 0)[0]
+        n = (
+            0 if y_crit[0, offset] * y_crit[1, offset] > 0
+            else 1
+        )
+        for z_idx in y1_zero_idxs:
+            z_idx += offset
+            dy1 = y_crit[0, z_idx + 1] - y_crit[0, z_idx]
+            y2 = np.mean(y_crit[1, z_idx:z_idx + 2])
+            n -= int(np.sign(dy1 * y2))
+        print(n, nu)
 
     # plot some eigens
     fig, ((ax1, ax2), (ax3, ax4), (ax5, ax6)) = plt.subplots(
         3, 2,
         figsize=(10, 10),
         sharex=True)
-    nu_mhzs = np.sqrt(
-        G * MSUN / (4 * np.pi**2 * RSUN**3) * wsq_crits) * MHZ
-    for n, nu in enumerate(nu_mhzs):
-        print(n + 1, nu)
     for ax, nu_mhz, x_crit, y_crit in zip(
             [ax1, ax2, ax3, ax4, ax5, ax6], nu_mhzs, x_crit_lst, y_crit_lst):
-        ax.loglog(x_crit, y_crit[0], c='g')
-        ax.loglog(x_crit, -y_crit[0], c='g', ls='--')
+        ax.semilogy(x_crit, y_crit[0], c='g')
+        ax.semilogy(x_crit, -y_crit[0], c='g', ls='--')
+        ax.semilogy(x_crit, y_crit[1], c='r')
+        ax.semilogy(x_crit, -y_crit[1], c='r', ls='--')
         ax.set_title(r'$\nu = %.4f\;\mathrm{\mu Hz}$' % nu_mhz)
     ax5.set_xlabel(r'$x$')
     plt.tight_layout()
-    plt.savefig('%s_sols' % fn, dpi=200)
+    plt.savefig('%s_sols' % fn)
     plt.close()
 
 if __name__ == '__main__':
     # tol = 1e-10
     # eps = 1e-7
     # xmid = 0.3
-    # x, ptrope_sol = build_polytrope(3, atol=tol, rtol=tol, eps=eps)
-
     # l = 1
-    # acc = opt_func(49, 55, l, ptrope_sol, x[-1], method='DOP853',
+    # x, ptrope_sol = build_polytrope(3, atol=tol, rtol=tol, eps=eps)
+    # acc = opt_func(10, 20, l, ptrope_sol, x[-1], method='DOP853',
     #                atol=tol, rtol=tol, eps=eps, xmid=xmid)
     # print(acc)
     # print(np.sqrt(G * MSUN / (4 * np.pi**2 * RSUN**3) * acc) * MHZ)
+    # acc = 11.40437494091295
+    # x_crit, y_crit = get_y(acc, l, ptrope_sol, x[-1], method='DOP853',
+    #                atol=tol, rtol=tol, eps=eps, xmid=xmid)
 
     os.makedirs('3sweeps', exist_ok=True)
     kws = dict(wsq_arr = np.linspace(5, 5000, 1024), nthreads=8,
