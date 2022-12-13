@@ -92,6 +92,38 @@
 
 \begin{document}
 
+\section{Misc Insights}
+
+\begin{itemize}
+    \item To understand the DOF counting for the shooting method, let's first
+        imagine shooting only from one direction. We have four first-order ODEs
+        and one pair of BCs on either side. Thus, when we shoot from one
+        direction, we apply two BCs and have two remaining constraints. Thus,
+        there should be a 2D space of solutions, so there should be two
+        linearly independent solutions that we can find. For them to be linearly
+        independent, they cannot differ only by a normalization; we thus choose
+        different $y_3 / y_1$ for them.
+
+        For a given pair of linearly independent solutions, we then evaluate the
+        outer BCs (upon arrival). In general, the values of these BCs will be
+        nonzero for both of our trial solutions. However, if a linear
+        combination of our linearly independent solutions can satisfy both BCs,
+        then we will have found a solution satisfying all four BCs. Of course,
+        for a general $\omega$, this should not be expected; it is not easy to
+        satisfy both BCs at once. As such, it's not surprising that only
+        isolated values of $\omega$ give us a chance at solving at the outer
+        boundary. To find whether a linear combination works, we evaluate the
+        Wronskian at the outer boundary and require it to be zero.
+
+        Now, what about two-sided shooting? This happens if there are
+        singular points at both boundaries. Here, we do the same procedure as
+        above, and we just require the two solutions to be stitchable at some
+        interior fitting point. We can think of this as two extra DOF ($y_3 /
+        y_1$ and normalization at outer point), but we have two matching
+        conditions at the interior fitting point, so we again have the same
+        argument for isolated eigenvalues as above.
+\end{itemize}
+
 \section{11/29/22}
 
 We follow Appendicies B-C of Le Bihan \& Burrows 2013. Note that we can seek two
@@ -578,10 +610,229 @@ Bihan says that the correct one to use is
 the BCs, it seems that I was passing in $x$ to an interpolation routine that
 accepted $\xi$ instead\dots welp.
 
-Also, \textbf{NOTE:} I changed the signs back to those in Le Bihan, and I get frequencies
-that are closer to theirs. So could it be possible that they didn't just make a
-typo, and have a different version of the Equations? TODO check the sympy and
-make sure I have the right signs.
+\subsection{Checking Signs with Previous Papers}
+
+I changed the signs back to those in Le Bihan, and I get frequencies that are
+closer to theirs. So could it be possible that they didn't just make a typo, and
+have a different version of the Equations? Let's check whether the Christiansen
+\& Dalsgaard paper also has the same signs as Le Bihan. Their nondimensional
+quantities are
+\begin{align}
+    z_1 &= \frac{\xi_r}{R} = xy_1,\\
+    z_3 &= x\frac{\delta \Phi}{gr} = xy_3,\\
+    z_4 &= x^2\rd{}{x}\p{\frac{\delta \Phi}{gr}}\nonumber\\
+        &= x^2\p{\frac{1}{gr}\rd{}{x}\delta \Phi
+            + \delta \Phi \rd{}{x}\p{\frac{1}{gr}}}\nonumber\\
+        &= x^2\p{\frac{R}{gr}\rd{}{r}\delta \Phi
+            + R\delta \Phi \rd{}{r}\p{\frac{1}{gr}}}\nonumber\\
+        &= x^2\p{\frac{y_4}{x}
+            - Ry_3 \frac{(gr)'}{gr}}\nonumber\\
+        &= xy_4 - xy_3 (U - 1),\\
+    z_2 &= x\p{\frac{\delta P}{\rho} - \delta \Phi}\frac{l(l + 1)}{\omega^2r^2}
+            = \frac{l(l+1)}{R}\xi_\perp\nonumber\\
+        &= \frac{1}{gr}\p{\frac{\delta P}{\rho} + \delta \Phi - 2\delta \Phi}
+            grx\frac{l(l + 1)}{\omega^2r^2}
+            \nonumber\\
+        &= \p{y_2 - 2y_3}\frac{xl(l+1)}{\bar{\omega}^2c_1}
+        = \p{y_2 - 2y_3}x\eta.
+\end{align}
+And the equations are:
+\begin{align}
+    x\rd{z_1}{x} &= \p{V_g - 2} z_1 + \p{1 - \frac{V_g}{\eta}} z_2
+        - V_gz_3,\\
+    x\rd{z_2}{x} &= \s{l(l+1) - \eta A}z_1 + (A - 1)z_2 + \eta Az_3,\\
+    x\rd{z_3}{x} &= z_3 + z_4,\\
+    x\rd{z_4}{x} &= -AUz_1 - U\frac{V_g}{\eta}z_2
+        + \s{l(l+1) + U(A - 2)}z_3
+        + 2\p{1 - U}z_4.
+\end{align}
+These are expressed in terms of
+\begin{align}
+    V_g &= -\frac{1}{\Gamma_1}\rd{\ln P_0}{\ln r},\\
+        &= -\frac{1}{\Gamma_1}\frac{r}{P_0}\p{-\rho_0 g}\nonumber\\
+        &= \frac{gr}{c_s^2},\\
+    A &= \frac{1}{\Gamma_1}\rd{\ln P_0}{\ln r}
+        - \rd{\ln \rho_0}{\ln r},\\
+        &= -\frac{gr}{c_s^2} - \frac{r}{\rho_0}\rd{P_0}{r}\rd{\rho_0}{P_0}
+            \nonumber\\
+        &= -\frac{gr}{c_s^2} + gr\rd{\rho_0}{P_0} \equiv \frac{N^2r}{g},\\
+    U &= \frac{4\pi \rho_0 r^3}{M_r},\\
+    \eta &= \frac{l(l + 1)g}{\omega^2 r},\\
+        &= \frac{l(l + 1) GM_r}{\bar{\omega}^2GMx^3}\nonumber\\
+        &= \frac{l(l+1)}{\bar{\omega}^2c_1}.
+\end{align}
+Note that $V_g$, $A$, $U$ are all the same as in Le Bihan, but $\eta$ is new. We
+replace the $z$'s with the Le Bihan $y$s:
+\begin{align}
+    x\rd{}{x}(xy_1)
+        &= x^2\rd{y_1}{x} + xy_1\nonumber\\
+        &= \p{V_g - 2}xy_1
+            + \p{1 - \frac{V_g \bar{\omega}^2c_1}{l(l+1)}}\p{y_2 - 2y_3}
+                \frac{xl(l+1)}{\bar{\omega}^2c_1}
+            - V_gxy_3\nonumber\\
+    x\rd{y_1}{x} &= \p{V_g - 3}y_1
+        + \p{\frac{l(l+1)}{\bar{\omega}^2c_1} - V_g}y_2
+        + \p{V_g - \textcolor{red}{2\frac{l(l+1)}{\bar{\omega}^2c_1}}}y_3,\\
+    x\rd{}{x}(xy_3) &= x^2\rd{y_3}{x} + xy_3\nonumber\\
+        &= xy_3 + xy_4 + xy_3(1 - U)\nonumber\\
+    x\rd{y_3}{x} &= (1 - U)y_3 + y_4,\\
+    x\rd{z_4}{x} &= x^2\rd{y_4}{x} + x^2(1 - U)\rd{y_3}{x}
+            + xy_4 + xy_3(1 - U) - x^2y_3\rd{U}{x}\nonumber\\
+        &= -AU xy_1 - U\frac{V_g}{\eta}z_2
+            + \s{l(l+1) + U(A - 2)}xy_3
+            + 2(1 - U)z_4\nonumber\\
+    \rd{U}{r} &= \frac{1}{M_r}\rd{(4\pi \rho_0r^3)}{r}
+            - \frac{4\pi \rho_0r^3}{M_r^2}(4\pi \rho_0r^2)\nonumber\\
+        &= -\frac{U^2}{r} + \frac{3U}{r} + U\rd{\ln \rho_0}{r}\nonumber\\
+    x\rd{U}{x} &= -U^2 + 3U - U\p{A + V_g}.
+\end{align}
+This gets messy, but we chug along:
+\begin{align}
+    x\rd{y_4}{x} ={}&
+            - AUy_1
+            - UV_g(y_2 - 2y_3)
+            + \s{l(l+1) + U(A - 2)}y_3\nonumber\\
+            &+ 2(1 - U)\s{y_4 + (1 - U)y_3}
+            - (1 - U)\s{(1 - U)y_3 + y_4}
+            - y_4\nonumber\\
+            &- y_3(1 - U)
+            + y_3\p{-U^2 + 3U - U(A + V_g)}\nonumber\\
+        ={}& -UAy_1
+            -UV_g y_2\nonumber\\
+            &+ \Big(2UV_g + l(l+1) + U(A - 2)
+                + 2(1 - U)^2 - (1 - U)^2\nonumber\\
+            &\quad- (1 - U) - U^2 + 3U - U(A + V_g)\Big)y_3\nonumber\\
+            &+ \p{2(1 - U) - (1 - U) - 1}y_4\nonumber\\
+        ={}& -UAy_1 -UV_g y_2 + \p{UV_g + l(l+1)}y_3 + Uy_4.
+\end{align}
+This has so many discrepancies in the signs, basically everything but the
+$l(l+1)$ is flipped. And as for the very last one:
+\begin{align}
+    x\rd{z_2}{x}
+        ={}&
+        x\eta (y_2 - 2y_3)
+        + x^2\eta\rd{}{x}(y_2 - y_3)
+        + x^2(y_2 - y_3)\rd{\eta}{x}\nonumber\\
+        ={}& \s{l(l+1) - \eta A}xy_1
+            + (A - 1)(y_2 - 2y_3)x\eta
+            + \eta Axy_3,\nonumber\\
+    \rd{\eta}{x} ={}& \frac{l(l+1)}{\bar{\omega}^2M/R^3}
+            \rd{}{x}\p{\frac{M_r}{r^3}}\nonumber\\
+        ={}& \frac{l(l+1)R^4}{\bar{\omega}^2M}
+            \p{\frac{4\pi \rho_0 r^2}{r^3}
+                - 3\frac{M_r}{r^4}}\nonumber\\
+        ={}& \frac{l(l+1)R^4}{\bar{\omega}^2M}
+            \p{U\frac{M_r}{r^4} - 3\frac{M_r}{r^4}}\nonumber\\
+        ={}& \frac{l(l+1)}{\bar{\omega}^2c_1x}(U - 3) = \frac{\eta}{x}(U - 3)
+            ,\nonumber\\
+    x\rd{y_2}{x}
+        ={}& \s{\frac{l(l+1)}{\eta} - A}y_1
+                + (A - 1)(y_2 - 2y_3)
+                + Ay_3
+                - (y_2 - 2y_3)\nonumber\\
+            &+ (1 - U)y_3 + y_4
+                - \p{y_2 - y_3}(U - 3)\nonumber\\
+        ={}& \s{c_1\bar{\omega}^2 - A}y_1
+                + \p{A - 1 - 1 - (U - 3)}y_2\nonumber\\
+            &+ \p{2(1 - A) + A + 2 + (1 - U) + (U - 3)}y_3 + y_4\nonumber\\
+        ={}& \s{c_1\bar{\omega}^2 - A}y_1
+                + \p{A + 1 - U}y_2 + 2y_3 + y_4.
+\end{align}
+At this point, it's clear we're dealing with something wrong: there's no $y_4$
+coefficient in our expressions for $y_2'(x)$!
+
+\subsubsection{Why is Everything Wrong? Here's a Guess:}
+
+Maybe the Christiansen \& Dalsgaard paper uses the opposite sign convention for
+$\Phi$. In this case, the expressions would be amended to:
+\begin{align}
+    z_1 ={}& xy_1,\\
+    z_2 ={}& x\eta y_2,\\
+    z_3 ={}& -xy_3,\\
+    z_4 ={}& -xy_4 + xy_3(U - 1),\\
+    x\rd{y_1}{x} ={}& \p{V_g - 3}y_1
+        + \p{\frac{l(l+1)}{\bar{\omega}^2c_1} - V_g}y_2
+        + V_gy_3,\\
+    x\rd{y_2}{x}
+        ={}& \s{\frac{l(l+1)}{\eta} - A}y_1
+                + (A - 1)y_2
+                - Ay_3
+                - y_2\nonumber\\
+            &+ - y_2(U - 3)\nonumber\\
+        ={}& \s{\frac{l(l+1)}{\eta} - A}y_1
+                + (A + 1 - U)y_2
+                - Ay_3,\\
+    x\rd{y_3}{x} ={}& (1 - U)y_3 + y_4,\\
+    x\rd{y_4}{x} ={}& AUy_1
+            + UV_gy_2
+            + \s{l(l+1) + U(A - 2)}y_3\nonumber\\
+            &+ 2(1 - U)\s{y_4 + (1 - U)y_3}
+            - (1 - U)\s{(1 - U)y_3 + y_4}
+            - y_4\nonumber\\
+            &- y_3(1 - U)
+            + y_3\p{-U^2 + 3U - U(A + V_g)}\nonumber\\
+        ={}& AUy_1
+            + UV_gy_2
+            + \s{l(l+1) - U(V_g) }y_3 - Uy_4.
+\end{align}
+Remarkably, this is in agreement with what we found. Thus, \textbf{we find that
+our derived equations are in agreement with Christiansen \& Dalsgaard, but have
+small sign discrepancies with Le Bihan.}
+
+\textbf{Note:} In hindsight, this had to just be a simple typo in the Le Bihan
+paper, otherwise the outer BC doesn't make sense; the coefficient of $A^*$ in
+$y_2'$ would be $y_1 - y_2 - y_3$, which doesn't vanish by the BCs.
+
+Also, I finally found the last bug: I decided to drop the outermost point in my
+polytrope mesh since we have some divergent quantities there, but this is
+insufficient precision. Instead, we should just evaluate the polytropic model
+for $x \in \s{\epsilon, 1 - \epsilon}$ and take $\epsilon = 10^{-4}$ or so.
+
+\subsection{Trick to pass in dense interpolant to Pickle!}
+
+We want better precision for our polytrope model, and the return of
+\lstinline{solve_ivp} has a very good dense solution for $\theta$. However,
+since $V_g$ etc.\ are derived functions of $\theta$, we need to find a way to
+pass this accurate interpolant to the actual stellar oscillation calculations.
+This is not easy, because we cannot just define lambdas that wrap the $\theta$
+interpolant, since pickle won't let us multiprocess using them.
+
+Instead, while computing the solution for the polytrope, let's also solve for
+$V_g$ and the others at the same time! Thus, the call to \lstinline{solve_ivp}
+will also return a dense interpolant for $V_g$ and others, which we can pass
+into the \lstinline{dydt} for the oscillation code.
+
+To do this, we will need the expressions for
+\begin{align}
+    \rd{V_g}{\xi} &= -\frac{n + 1}{\Gamma_1}\s{
+            \frac{\theta'}{\theta} + \frac{\xi}{\theta}\theta''
+            - \frac{\xi \p{\theta'}^2}{\theta^2}
+        },\\
+    \rd{U}{\xi} &= -\s{
+        n\xi\theta^{n-1} + \frac{\theta^n}{\theta'}
+        - \frac{\xi \theta^n \theta''}{(\theta')^2}},\\
+    \rd{c_1}{\xi} &= \frac{\theta'(\xi_1)}{\xi_1}
+        \p{\frac{1}{\theta'} - \frac{\xi \theta''}{(\theta')^2}},\\
+    \rd{A^*}{\xi} &= -(n + 1)\p{\frac{1}{\Gamma} - \frac{1}{\Gamma_1}}\s{
+            \frac{\theta'}{\theta} + \frac{\xi}{\theta}\theta''
+            - \frac{\xi \p{\theta'}^2}{\theta^2}
+        }.
+\end{align}
+Note that $c_1$ depends on the surface values for $\theta$, so we can just
+normalize $c_1$ by its surface value, i.e.
+\begin{align}
+    \rd{\bar{c}_1}{\xi} &= \frac{1}{\theta'}
+        - \frac{\xi \theta''}{(\theta')^2},\\
+    c_1 &= \bar{c}_1 / \bar{c}_1(\xi_1).
+\end{align}
+Recall that the central values for these are
+\begin{align}
+    V_g(\epsilon) &= \frac{(n + 1) \epsilon^2}{3\Gamma_1},\\
+    U(\epsilon) &\approx 3,\\
+    \bar{c}_1(\epsilon) &\approx -3,\\
+    A^*(0) &= \frac{(n + 1) \epsilon^2}{3}\p{\frac{1}{\Gamma} - \frac{1}{\Gamma_1}}.
+\end{align}
+This procedure seems to be giving the correct eigenfrequencies now!
 
 \end{document}
 
