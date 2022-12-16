@@ -124,8 +124,6 @@
         argument for isolated eigenvalues as above.
 \end{itemize}
 
-\section{11/29/22}
-
 We follow Appendicies B-C of Le Bihan \& Burrows 2013. Note that we can seek two
 independent solutions to the ODEs because it is not a simple Sturm-Liouville
 form problem: the structure is quite complex, so we aren't guaranteed simple
@@ -226,9 +224,12 @@ for simplicity. The rest follow:
     U(\xi) &= \frac{4\pi \rho (\xi\alpha)^3}{M_r}\nonumber\\
         &= -\frac{\theta^n \xi}{\theta'(\xi)}\\
     c_1 &= \textcolor{red}{\frac{r / R}{M_r / M}}\nonumber\\
-        &= \frac{1}{(\xi / \xi_1)(\theta'(\xi) / \theta'(\xi_1))}.
+        &= \frac{1}{(\xi / \xi_1)(\theta'(\xi) / \theta'(\xi_1))},\\
+    \textcolor{red}{c_1}&\textcolor{red}{= \frac{\p{r / R}^3}{M_r / M}
+        = \frac{\xi / \xi_1}{\theta'(\xi) / \theta'(\xi_1)}}.
 \end{align}
-Note that $U(\xi \to 1) = 3$ and $c_1(\xi \to 0) \propto -1 / \xi^2$.
+Note that $U(\xi \to 1) = 3$ and $c_1(\xi \to 0) \propto -1 / \xi^2$. Correct
+$c_1$ is shown for easier reference.
 
 There's a small point of contention about $c_s$ and $N$, since they depend on
 the adiabatic index $\Gamma_1$ and not just the polytropic index $\Gamma$. It
@@ -257,9 +258,133 @@ the Le Bihan formulation:
         &= -\frac{1}{\Gamma_1} \frac{(n + 1)\xi \theta'(\xi)}{\theta(\xi)}
 \end{align}
 
-\subsection{Oscillation Equations}
+For convenience, we also provide the inversion of these fields back into
+physical quantities. We choose $(P_0, \rho_0, c_s^2, g)$ as our four physical
+quantities (any four will do):
+\begin{align}
+    g &= \frac{(GM / R^3) r}{c_1},\\
+    c_s^2 &= \frac{gr}{V_g}
+        = \frac{(GM / R^3) r^2}{c_1V_g},\\
+    \rho_0 &= \frac{gU}{4\pi G r} = U\frac{M}{4\pi c_1R^3},\\
+    A^* &= gr\p{\rd{\rho_0}{P_0} - \frac{1}{c_s^2}},\nonumber\\
+    P_0 &= \int\limits\mathrm{d}r\;
+        \p{\frac{A^*}{gr} + \frac{1}{c_s^2}}^{-1}
+        \rd{\rho_0}{r}.
+\end{align}
+In the case of a polytrope with $\Gamma = 1 + 1 / n$ , the $P_0$ inversion is a
+bit cleaner:
+\begin{equation}
+    P_0 = \frac{\rho_0 gr}{\Gamma (A^* + V_g)}.
+\end{equation}
+Also possibly useful is
+\begin{equation}
+    M_r = \frac{(r / R)^3}{c_1}M.
+\end{equation}
+It's clear that we cannot calculate $M_r$ until we have integrated the entire
+polytrope, nor can we calculate the end point of the first simulation $\xi_c$
+since we don't know $R$ yet. Thus, if we want a specific core mass / radius, we
+will have to proceed iteratively.
 
-\subsubsection{Physical Form}
+\subsection{Piecewise Polytrope}
+
+Simplest model for a core + envelope structure. Let's imagine that there is a
+interior and envelope with polytropic indicies $n_i$ and $n_e$. How do we stitch
+these together? Well, qualitatively, looking at Le Bihan, we note that the
+pressure should be continuous, but the density can change (drop), resulting in a
+change to the sound speed. Thus, in both regions, we are solving the usual
+hydrostatic equilibrium equations:
+\begin{align}
+    \rd{P}{r} &= -\frac{GM_r}{r^2}\rho,\\
+    \rd{M_r}{r} &= 4\pi r^2\rho,\\
+    P &= K\rho^\Gamma = K_{i, e}\rho^{1 + 1/n_{i, e}},\\
+    \frac{1}{r^2}\rd{}{r}\p{r^2 K\rho^{\Gamma_{i, e} - 2}\Gamma_{i, e}
+        \rd{\rho}{r}} &= -G 4\pi \rho.
+\end{align}
+The solution within the core is exactly what we've done before, except that we
+terminate the solution based on a particular $M_r$ instead of when $\theta = 0$.
+
+However, how do we solve in the envelope? Well, the inner BC at $r = R_c$
+(initial conditions) must satisfy
+\begin{align}
+    \rho_i(R_{c}) &= C_\rho \rho_e\p{R_c},\\
+    K_i\rho_i^{\Gamma_i}(R_c) &= K_e\rho_e^{\Gamma_e}(R_c).
+\end{align}
+This $C_\rho$ can be specified by hand. Note though that the structure for a
+polytrope is scale-free: we translate the dimensionless $\theta, \theta'$ to
+physical quantities via $M, R$. So with two polytropic zones and two BCs, we
+have four quantities $M_{i,e}, R_{i,e}$ that are connected via the BCs to have
+only two DOF which reduce the problem to the standard form. To relate the two
+$M, R$, we can plug in our known forms for $K$ and $\rho_c$ (note that $\xi_1$
+depends only on $n$):
+\begin{align}
+    \rho_c &= \p{\frac{M}{4\pi R^3/3}}\p{-\frac{\xi_1}{3\theta'(\xi_1)}}
+        \nonumber\\
+        &\equiv \frac{M}{R^3}\eta_\rho(n),\\
+    \eta_\rho(n) &\equiv -\frac{3}{4\pi}\frac{\xi_1}{3\theta'(\xi_1)},\\
+    K &= \frac{R^2}{\xi_1^2}\rho_c^{\frac{n - 1}{n}}\frac{4\pi G}{n + 1}
+            \nonumber\\
+        &= GM^{\frac{n - 1}{n}}R^{\frac{3}{n} - 1}\eta_K(n),\\
+    \eta_K(n) &=
+        \frac{4\pi}{(n + 1)\xi_1^2}\eta_\rho^{\frac{n - 1}{n}}(n).
+\end{align}
+The units on $K$ should check out: the $\rho$ factor is just
+$\rho^2\rho^{-\Gamma}$, so $K\rho^\Gamma \sim R^2\rho^2G = GM^2/R^4$ which has
+units of pressure indeed. The BCs then become
+\begin{align}
+    \frac{M_i}{R_i^3}\eta_\rho(n_i)\theta_i^{n_i}\p{\xi_{1, i}\frac{R_c}{R_i}}
+        &= C_\rho\frac{M_e}{R_e^3}\eta_\rho(n_e)
+            \theta_e^{n_e}\p{\xi_{1, e}\frac{R_c}{R_e}} ,\\
+    M_i^{\frac{n_i - 1}{n_i}}R_i^{\frac{3}{n_i} - 1}\eta_K(n_i)
+            \s{\frac{M_i}{R_i^3}\eta_\rho(n_i)\theta_i^{n_i}}^{\Gamma_i}
+        &= M_e^{\frac{n_e - 1}{n_e}}R_e^{\frac{3}{n_e} - 1}\eta_K(n_e)
+            \s{\frac{M_e}{R_e^3}\eta_\rho(n_e)\theta_e^{n_e}}^{\Gamma_e}\nonumber\\
+    \frac{M_i^2}{R_i^{4}}\eta_K(n_i)\eta_\rho^{\Gamma_i}(n_i)
+            \theta_i^{n_i + 1}\p{\xi_{1, i}\frac{R_c}{R_i}}
+        &= \frac{M_e^2}{R_e^{4}}\eta_K(n_e)\eta_\rho^{\Gamma_e}(n_e)
+            \theta_e^{n_e + 1}\p{\xi_{1, e}\frac{R_c}{R_e}}\nonumber\\
+    R_i^2\eta_K\eta_\rho^{\frac{1 - n_i}{n_i}}
+            \theta_i^{1 - n_i}\p{\xi_{1, i}\frac{R_c}{R_i}}
+        &= \frac{R_e^2}{C_\rho^2}\eta_K\eta_\rho^{\frac{1 - n_e}{n_e}}
+            \theta_e^{1 - n_e}\p{\xi_{1, e}\frac{R_c}{R_e}}.
+\end{align}
+Of course the pressure condition was going to be equal to this, since $GM^2/R^4$
+was the only term that had units of pressure. These equations are, of course,
+implicit, since the argument to $\theta_{i,e}$ depends on $R_{i, e}$ (the
+subscript to $\theta$ is because different $n_{i, e}$ will give different
+solutions to the L-E equation).
+
+If we assume that $n_i = n_e = n$, these conditions simplify quite a bit, since the
+$\eta$ factors cancel:
+\begin{align}
+    R_i^2 \theta^{1 - n}\p{\xi_1\frac{R_c}{R_i}}
+        &= \frac{R_e^2}{C_\rho^2}
+            \theta^{1 - n}\p{\xi_1\frac{R_c}{R_e}},\\
+    M_e &= M_i\frac{R_e^3}{C_\rho R_i^3}
+        \theta^{n}\p{\xi_1\frac{R_c}{R_i}}
+        \theta^{-n}\p{\xi_1\frac{R_c}{R_e}}.
+\end{align}
+In the code, we will take $M_i = R_i = 1$, so we effectively solve for $M_e /
+M_i$ and $R_e / R_i$. Then, the total radius of the star is $R_e$, and:
+\begin{itemize}
+    \item For $r < R_c$, we need to evaluate the interior polytrope at $\xi_i =
+        r\frac{\xi_{1i}}{R_i}$.
+    \item For $r > R_c$, we need to evaluate the exterior polytrope at $\xi_e =
+        r\frac{\xi_{1e}}{R_e}$.
+\end{itemize}
+We want however to express the stellar structure exclusively in terms of the
+overall radius variable $\xi \equiv \xi_e$. This means that for all
+interior quantities $Q_i(\xi_i)$, we should just be evaluating them at
+\begin{equation}
+    Q_i(\xi_i) = Q_i\p{\xi\frac{\xi_{1i} / \xi_{1e}}{R_i / R_e}}.
+\end{equation}
+
+\textbf{Note:} This is surprisingly difficult to get in closed form, and I
+don't know if I'm doing all the transformation of variables correctly. Probably
+best at this point to just move on to a better structure model.
+
+\section{Oscillation Equations}
+
+\subsection{Physical Form}
 
 Let's rederive the oscillation equations too, all the way through the
 nondimensionalized form (we did this in Dong's class). We start with the Euler
@@ -924,6 +1049,47 @@ Finally, note that
 is only relevant when we start solving for an envelope rather than the full
 body, since if $x_{\rm in} = 0$ then the inner BC always forces $y_1 / y_2 > 0$
 and thus $n_0 = 0$.
+
+\section{Structure Models}
+
+In general, to get a structure, we solve the Poisson equation and that of
+hydrostatic equilibrium
+\begin{align}
+    \vec{\nabla}P &= -\rho \vec{\nabla}\Phi,\\
+    \nabla^2\Phi &= 4\pi G\rho.
+\end{align}
+For a spherically symmetric structure, this becomes
+\begin{align}
+    \rd{P}{r} &= -\rho \rd{\Phi}{r},\\
+    \frac{1}{r^2}\rd{}{r}\p{r^2\rd{\Phi}{r}} &= 4\pi G\rho.
+\end{align}
+This constitutes two equations for the three fields $\p{P(r), \rho(r),
+\Phi(r)}$. Thus, we need one more equation to close the system.
+
+\subsection{Polytrope}
+
+Again, let's do this as a sanity check. A polytropic EoS gives
+\begin{align}
+    P &= K\rho^\Gamma,\\
+    \Gamma K\rho^{\Gamma - 2}\rd{\rho}{r} &= -\Phi',\\
+    \rd{\Phi}{r} &\equiv \Phi',\\
+    \frac{1}{r^2}\rd{}{r}\p{r^2\Phi'} &= 4\pi G\rho.
+\end{align}
+Thus, we now have three first-order ODEs for the three fields $\rho(r)$,
+$\Phi(r)$, and $\Phi'(r)$. For a given $\Gamma > 6/5$ (corresponding to $n <
+5$), we integrate out until $\rho = 0$.
+
+\subsection{General EoS}
+
+In general, we are given a more complex EOS\@. Suppose for now that we have a
+single species (easily generalizable to uniform composition probably) and a
+uniform entropy $S_0$. The EOS for this single species is a 4-parameter table
+mapping any two of $\p{P, \rho, T, S}$ to the other two. Thus, we should be able
+to just read off $P\p{\rho, S_0}$ for a given uniform entropy $S_0$. Does this
+work?
+
+Note that if this is the case, then $\rdil{P}{\rho} = (\pdil{P}{\rho})_S$, and
+$N^2 = 0$. This is in accordance with our expectations.
 
 \end{document}
 
